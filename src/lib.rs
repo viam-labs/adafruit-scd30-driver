@@ -16,9 +16,8 @@ pub fn register_models(_registry: &mut ComponentRegistry) -> anyhow::Result<(), 
     Ok(())
 }
 
+#[derive(DoCommand)]
 pub struct AdafruitSCD30;
-
-
 
 impl AdafruitSCD30 {
     pub fn from_config(_cfg: ConfigType, _deps: Vec<Dependency>) -> anyhow::Result<SensorType> {
