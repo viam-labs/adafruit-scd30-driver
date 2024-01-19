@@ -1,0 +1,13 @@
+[package]
+name = "adafruit-scd30-driver"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jack Damon <jdamon96@gmail.com>"]
+resolver = "2"
+
+[dependencies]
+anyhow = {version = "1", features = ["backtrace"]}
+micro-rdk = {git = "https://github.com/viamrobotics/micro-rdk.git", features = ["esp32"]}
+
+[package.metadata.com.viam]
+module = true
