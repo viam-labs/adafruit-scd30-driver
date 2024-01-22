@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use micro_rdk::DoCommand;
 use micro_rdk::common::{
@@ -10,9 +11,9 @@ use micro_rdk::common::{
     status::Status,
 };
 
-pub fn register_models(_registry: &mut ComponentRegistry) -> anyhow::Result<(), RegistryError> {
+pub fn register_models(registry: &mut ComponentRegistry) -> anyhow::Result<(), RegistryError> {
     registry.register_sensor("adafruit-scd30", &AdafruitSCD30::from_config)?;
-    log::debug!("adafruit-scd-30 sensor registration ok");
+    println!("adafruit-scd-30 sensor registration ok");
     Ok(())
 }
 
@@ -49,7 +50,7 @@ impl SensorT<f64> for AdafruitSCD30 {
 
 impl Status for AdafruitSCD30 {
     fn get_status(&self) -> anyhow::Result<Option<micro_rdk::google::protobuf::Struct>> {
-        log::debug!("wifi-rssi sensor - get status called");
+        println!("wifi-rssi sensor - get status called");
         Ok(Some(micro_rdk::google::protobuf::Struct {
             fields: HashMap::new(),
         }))
