@@ -41,16 +41,16 @@ impl AdafruitSCD30 {
     pub fn new(mut i2c_handle: I2cHandleType, i2c_address: u8) -> anyhow::Result<Self> {
         // let bytes: [u8; 2] = [RESET_COMMAND >> 8, RESET_COMMAND & 0xFF];
         let bytes = _get_command_bytes(RESET_COMMAND);
-        match i2c_handle.write_i2c(i2c_address, &bytes) {
-            Ok(_) => (),
-            Err(err) => {
-                println!("AdafruitSCD30 reset command failed: {:?}", err);
-                return Err(anyhow::anyhow!(
-                    "AdafruitSCD30 reset command failed: {:?}",
-                    err
-                ))
-            }
-        };
+        // match i2c_handle.write_i2c(i2c_address, &bytes) {
+        //     Ok(_) => (),
+        //     Err(err) => {
+        //         println!("AdafruitSCD30 reset command failed: {:?}", err);
+        //         return Err(anyhow::anyhow!(
+        //             "AdafruitSCD30 reset command failed: {:?}",
+        //             err
+        //         ))
+        //     }
+        // };
         Ok(Self {
             i2c_handle,
             i2c_address,
