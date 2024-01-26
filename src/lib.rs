@@ -105,7 +105,7 @@ impl AdafruitSCD30 {
         let mut result: [u8; 2] = [0; 2];
         let command_bytes = _get_command_bytes(DATA_READY_COMMAND);
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
-        Ok(result[0] == 1)
+        Ok(result[1] == 1)
     }
 
     fn get_readings(&mut self) -> anyhow::Result<TypedReadingsResult<f64>> {
