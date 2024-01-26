@@ -1,7 +1,8 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-
+use micro_rdk::common::board::Board;
+use micro_rdk::common::i2c::I2CHandle;
 use micro_rdk::common::i2c::I2cHandleType;
 use micro_rdk::DoCommand;
 use micro_rdk::common::{
@@ -21,6 +22,7 @@ pub fn register_models(registry: &mut ComponentRegistry) -> anyhow::Result<(), R
 
 const RESET_COMMAND: u8 = 0xD304;
 const READ_COMMAND: u8 = 0x0300;
+const SCD30_DEFAULT_ADDRESS: u8 = 0x61;
 
 fn _get_command_bytes(command: u8) -> [u8; 2] {
     [command >> 8, command & 0xFF]
@@ -57,21 +59,24 @@ impl AdafruitSCD30 {
         }
         let board_unwrapped = board.unwrap();
         let i2c_handle: I2cHandleType;
+
+
         if let Ok(i2c_name) = cfg.get_attribute::<String>("i2c_bus") {
             i2c_handle = board_unwrapped.get_i2c_by_name(i2c_name)?;
-        } else {
+        }else {
             return Err(anyhow::anyhow!(
                 "i2c_bus is a required config attribute for AdafruitSCD30"
             ));
         };
-        if let Ok(use_alt_address) = cfg.get_attribute::<bool>("use_alt_i2c_address") {
-            if use_alt_address {
-                return Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 29)?)));
-            }
-            Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 83)?)))
-        } else {
-            Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 83)?)))
-        }
+        Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, SCD30_DEFAULT_ADDRESS)?)))
+        // if let Ok(use_alt_address) = cfg.get_attribute::<bool>("use_alt_i2c_address") {
+        //     if use_alt_address {
+        //         return Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 29)?)));
+        //     }
+        //     Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, SCD30_DEFAULT_ADDRESS)?)))
+        // } else {
+        //     Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, SCD30_DEFAULT_ADDRESS)?)))
+        // }
     }
 
     // pub fn close(&mut self) -> anyhow::Result<()> {
@@ -85,13 +90,6 @@ impl AdafruitSCD30 {
 
 }
 
-impl Drop for AdafruitSCD30 {
-    fn drop(&mut self) {
-        if let Err(err) = self.close() {
-            println!("adafruit-scd-30 close failure: {:?}", err)
-        };
-    }
-}
 
 impl Sensor for AdafruitSCD30 {}
 
@@ -100,7 +98,7 @@ impl Readings for AdafruitSCD30 {
         Ok(self
             .get_readings()?
             .into_iter()
-            .map(|v| (v.0, SensorResult::<f64> { value: v.1 }.into()))
+            .map(|v| (v.0, SensorResult::<f32> { value: v.1 }.into()))
             .collect())
     }
 }
@@ -126,37 +124,34 @@ impl SensorT<f32> for AdafruitSCD30 {
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
-        // now results filled w/ what we need to unpack
-        // let co2_reading = get_co2_from_reading(&result);
+    
         let co2_reading = get_reading_from_bytes(&result, 0);
         match co2_reading {
-            Ok(value) => x.insert("co2".to_string(), value),
+            Ok(value) => { x.insert("co2".to_string(), value); },
             Err(e) => {
-                // Handle the error here. For example, you can log the error or return it.
-                // For demonstration, let's just log the error and not insert anything.
                 eprintln!("Error reading CO2: {}", e);
+                x.insert("co2".to_string(), None);
             }
         }
+    
         let temp_reading = get_reading_from_bytes(&result, 6);
         match temp_reading {
-            Ok(value) => x.insert("temperature".to_string(), value),
+            Ok(value) => { x.insert("temperature".to_string(), value); },
             Err(e) => {
-                // Handle the error here. For example, you can log the error or return it.
-                // For demonstration, let's just log the error and not insert anything.
                 eprintln!("Error reading temperature: {}", e);
+                x.insert("temperature".to_string(), None);
             }
         }
-
+    
         let humidity_reading = get_reading_from_bytes(&result, 12);
         match humidity_reading {
-            Ok(value) => x.insert("humidity".to_string(), value),
+            Ok(value) => { x.insert("humidity".to_string(), value); },
             Err(e) => {
-                // Handle the error here. For example, you can log the error or return it.
-                // For demonstration, let's just log the error and not insert anything.
                 eprintln!("Error reading humidity: {}", e);
+                x.insert("humidity".to_string(), None);
             }
         }
-
+    
         Ok(x)
     }
 }
