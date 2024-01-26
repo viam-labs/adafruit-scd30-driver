@@ -1,12 +1,12 @@
 
-use crate::common::i2c::I2cHandleType;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use micro_rdk::common::i2c::I2cHandleType;
 use micro_rdk::DoCommand;
 use micro_rdk::common::{
     config::ConfigType,
-    registry::{ComponentRegistry, Dependency, RegistryError},
+    registry::{ComponentRegistry, Dependency, RegistryError, get_board_from_dependencies},
     sensor::{
         GenericReadingsResult, Readings, Sensor, SensorResult, SensorT, SensorType, TypedReadingsResult,
     },
@@ -48,7 +48,7 @@ impl AdafruitSCD30 {
     pub(crate) fn from_config(
         cfg: ConfigType,
         dependencies: Vec<Dependency>,
-    ) -> anyhow::Result<MovementSensorType> {
+    ) -> anyhow::Result<SensorType> {
         let board = get_board_from_dependencies(dependencies);
         if board.is_none() {
             return Err(anyhow::anyhow!(
@@ -66,29 +66,29 @@ impl AdafruitSCD30 {
         };
         if let Ok(use_alt_address) = cfg.get_attribute::<bool>("use_alt_i2c_address") {
             if use_alt_address {
-                return Ok(Arc::new(Mutex::new(ADXL345::new(i2c_handle, 29)?)));
+                return Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 29)?)));
             }
-            Ok(Arc::new(Mutex::new(ADXL345::new(i2c_handle, 83)?)))
+            Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 83)?)))
         } else {
-            Ok(Arc::new(Mutex::new(ADXL345::new(i2c_handle, 83)?)))
+            Ok(Arc::new(Mutex::new(AdafruitSCD30::new(i2c_handle, 83)?)))
         }
     }
 
-    pub fn close(&mut self) -> anyhow::Result<()> {
-        // put the MPU in the sleep state
-        let off_data: [u8; 2] = [STANDBY_MODE_REGISTER, 0];
-        if let Err(err) = self.i2c_handle.write_i2c(self.i2c_address, &off_data) {
-            return Err(anyhow::anyhow!("AdafruitSCD30 sleep command failed: {:?}", err));
-        };
-        Ok(())
-    }
+    // pub fn close(&mut self) -> anyhow::Result<()> {
+    //     // put the MPU in the sleep state
+    //     let off_data: [u8; 2] = [STANDBY_MODE_REGISTER, 0];
+    //     if let Err(err) = self.i2c_handle.write_i2c(self.i2c_address, &off_data) {
+    //         return Err(anyhow::anyhow!("AdafruitSCD30 sleep command failed: {:?}", err));
+    //     };
+    //     Ok(())
+    // }
 
 }
 
 impl Drop for AdafruitSCD30 {
     fn drop(&mut self) {
         if let Err(err) = self.close() {
-            log::error!("adxl-345 close failure: {:?}", err)
+            println!("adafruit-scd-30 close failure: {:?}", err)
         };
     }
 }
@@ -106,8 +106,8 @@ impl Readings for AdafruitSCD30 {
 }
 
 fn get_reading_from_bytes(reading: &[u8; 18], start: usize) -> anyhow::Result<f32> {
-    let first_slice = reading[start..start + 2];
-    let second_slice = reading[start + 3..start + 5];
+    let first_slice = &reading[start..start + 2];
+    let second_slice = &reading[start + 3..start + 5];
     let combined = [
         first_slice[0],
         first_slice[1],
@@ -123,26 +123,40 @@ impl SensorT<f32> for AdafruitSCD30 {
      */
     fn get_readings(&self) -> anyhow::Result<TypedReadingsResult<f32>> {
         let mut x = HashMap::new();
-        // x.insert("fake_temp".to_string(), 75.0);
-        // println!("scd30 - get readings OK");
-        // Ok(x)
-        // let register_write: [u8; 1] = [READING_START_REGISTER];
-        // let mut result: [u8; 6] = [0; 6];
-        // self.i2c_handle
-        //     .write_read_i2c(self.i2c_address, &register_write, &mut result)?;
-        // Ok(get_co2_from_reading(&result))
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
         // now results filled w/ what we need to unpack
         // let co2_reading = get_co2_from_reading(&result);
         let co2_reading = get_reading_from_bytes(&result, 0);
+        match co2_reading {
+            Ok(value) => x.insert("co2".to_string(), value),
+            Err(e) => {
+                // Handle the error here. For example, you can log the error or return it.
+                // For demonstration, let's just log the error and not insert anything.
+                eprintln!("Error reading CO2: {}", e);
+            }
+        }
         let temp_reading = get_reading_from_bytes(&result, 6);
-        let humidity_reading = get_reading_from_bytes(&result, 12);
+        match temp_reading {
+            Ok(value) => x.insert("temperature".to_string(), value),
+            Err(e) => {
+                // Handle the error here. For example, you can log the error or return it.
+                // For demonstration, let's just log the error and not insert anything.
+                eprintln!("Error reading temperature: {}", e);
+            }
+        }
 
-        x.insert("co2".to_string(), co2_reading);
-        x.insert("temp".to_string(), temp_reading);
-        x.insert("humidity".to_string(), humidity_reading);
+        let humidity_reading = get_reading_from_bytes(&result, 12);
+        match humidity_reading {
+            Ok(value) => x.insert("humidity".to_string(), value),
+            Err(e) => {
+                // Handle the error here. For example, you can log the error or return it.
+                // For demonstration, let's just log the error and not insert anything.
+                eprintln!("Error reading humidity: {}", e);
+            }
+        }
+
         Ok(x)
     }
 }
