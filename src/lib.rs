@@ -116,11 +116,11 @@ impl AdafruitSCD30 {
         // self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
         // self.i2c_handle.write_i2c(self.i2c_address, &command_bytes)?;
         let mut number_attempts = 10;
-        let mut data_available = false;
         while number_attempts > 0{
             if let Ok(is_data_available) = self.is_data_available() {
-                data_available = is_data_available;
-                break;
+                if is_data_available {
+                    break;
+                }
             }
             std::thread::sleep(std::time::Duration::from_millis(100));
             number_attempts -= 1;
