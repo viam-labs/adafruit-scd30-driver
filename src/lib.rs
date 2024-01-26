@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use micro_rdk::common::board::Board;
 use micro_rdk::common::i2c::I2CHandle;
 use micro_rdk::common::i2c::I2cHandleType;
 use micro_rdk::DoCommand;
@@ -98,7 +99,7 @@ impl Readings for AdafruitSCD30 {
         Ok(self
             .get_readings()?
             .into_iter()
-            .map(|v| (v.0, SensorResult::<f32> { value: v.1 }.into()))
+            .map(|v| (v.0, SensorResult::<f64> { value: v.1 }.into()))
             .collect())
     }
 }
@@ -115,23 +116,23 @@ fn get_reading_from_bytes(reading: &[u8; 18], start: usize) -> anyhow::Result<f3
     Ok(f32::from_be_bytes(combined.try_into()?))
 }
 
-impl SensorT<f32> for AdafruitSCD30 {
+impl SensorT<f64> for AdafruitSCD30 {
     /**
      * Reference from: https://github.com/viamrobotics/micro-rdk/blob/2b9d95885f89e3512a9f54309596b27803409321/src/common/adxl345.rs#L124C4-L130C6 
      */
-    fn get_readings(&self) -> anyhow::Result<TypedReadingsResult<f32>> {
+    fn get_readings(&self) -> anyhow::Result<TypedReadingsResult<f64>> {
         let mut x = HashMap::new();
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
     
-        let co2_reading = get_reading_from_bytes(&result, 0)?;
+        let co2_reading = get_reading_from_bytes(&result, 0)? as f64;
 
     
-        let temp_reading = get_reading_from_bytes(&result, 6)?;
+        let temp_reading = get_reading_from_bytes(&result, 6)? as f64;
 
     
-        let humidity_reading = get_reading_from_bytes(&result, 12)?;
+        let humidity_reading = get_reading_from_bytes(&result, 12)? as f64;
 
         x.insert("co2".to_string(), co2_reading);
         x.insert("temperature".to_string(), temp_reading);
