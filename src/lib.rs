@@ -41,7 +41,16 @@ impl AdafruitSCD30 {
     pub fn new(mut i2c_handle: I2cHandleType, i2c_address: u8) -> anyhow::Result<Self> {
         // let bytes: [u8; 2] = [RESET_COMMAND >> 8, RESET_COMMAND & 0xFF];
         let bytes = _get_command_bytes(RESET_COMMAND);
-        i2c_handle.write_i2c(i2c_address, &bytes)?;
+        match i2c_handle.write_i2c(i2c_address, &bytes) {
+            Ok(_) => (),
+            Err(err) => {
+                println!("AdafruitSCD30 reset command failed: {:?}", err);
+                return Err(anyhow::anyhow!(
+                    "AdafruitSCD30 reset command failed: {:?}",
+                    err
+                ))
+            }
+        };
         Ok(Self {
             i2c_handle,
             i2c_address,
@@ -55,6 +64,7 @@ impl AdafruitSCD30 {
     ) -> anyhow::Result<SensorType> {
         let board = get_board_from_dependencies(dependencies);
         if board.is_none() {
+            println!("board is none");
             return Err(anyhow::anyhow!(
                 "actual board is required to be passed to configure AdafruitSCD30"
             ));
@@ -66,6 +76,7 @@ impl AdafruitSCD30 {
         if let Ok(i2c_name) = cfg.get_attribute::<String>("i2c_bus") {
             i2c_handle = board_unwrapped.get_i2c_by_name(i2c_name)?;
         }else {
+            println!("i2c_bus is a required config attribute for AdafruitSCD30");
             return Err(anyhow::anyhow!(
                 "i2c_bus is a required config attribute for AdafruitSCD30"
             ));
