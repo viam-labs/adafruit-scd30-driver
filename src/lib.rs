@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use micro_rdk::common::board::Board;
+
 use micro_rdk::common::i2c::I2CHandle;
 use micro_rdk::common::i2c::I2cHandleType;
 use micro_rdk::DoCommand;
@@ -125,32 +125,18 @@ impl SensorT<f32> for AdafruitSCD30 {
         let mut result: [u8; 18] = [0; 18];
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
     
-        let co2_reading = get_reading_from_bytes(&result, 0);
-        match co2_reading {
-            Ok(value) => { x.insert("co2".to_string(), value); },
-            Err(e) => {
-                eprintln!("Error reading CO2: {}", e);
-                x.insert("co2".to_string(), None);
-            }
-        }
+        let co2_reading = get_reading_from_bytes(&result, 0)?;
+
     
-        let temp_reading = get_reading_from_bytes(&result, 6);
-        match temp_reading {
-            Ok(value) => { x.insert("temperature".to_string(), value); },
-            Err(e) => {
-                eprintln!("Error reading temperature: {}", e);
-                x.insert("temperature".to_string(), None);
-            }
-        }
+        let temp_reading = get_reading_from_bytes(&result, 6)?;
+
     
-        let humidity_reading = get_reading_from_bytes(&result, 12);
-        match humidity_reading {
-            Ok(value) => { x.insert("humidity".to_string(), value); },
-            Err(e) => {
-                eprintln!("Error reading humidity: {}", e);
-                x.insert("humidity".to_string(), None);
-            }
-        }
+        let humidity_reading = get_reading_from_bytes(&result, 12)?;
+
+        x.insert("co2".to_string(), co2_reading);
+        x.insert("temperature".to_string(), temp_reading);
+        x.insert("humidity".to_string(), humidity_reading);
+   
     
         Ok(x)
     }
