@@ -104,6 +104,7 @@ impl AdafruitSCD30 {
     fn is_data_available(&mut self) -> anyhow::Result<bool> {
         let mut result: [u8; 2] = [0; 2];
         let command_bytes = _get_command_bytes(DATA_READY_COMMAND);
+
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
         Ok(result[1] == 1)
     }
@@ -128,6 +129,7 @@ impl AdafruitSCD30 {
                 return Err(anyhow::anyhow!("AdafruitSCD30 data not available"));
             }
         }
+        println!("data ready");
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
         println!("result: {:?}", result);
 
