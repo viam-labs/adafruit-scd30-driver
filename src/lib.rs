@@ -113,7 +113,7 @@ impl AdafruitSCD30 {
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
         // self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
-        self.i2c_handle.write_i2c(self.i2c_address, &command_bytes)?;
+        // self.i2c_handle.write_i2c(self.i2c_address, &command_bytes)?;
         let mut number_attempts = 10;
         while !self.is_data_available()? {
             std::thread::sleep(std::time::Duration::from_millis(100));
