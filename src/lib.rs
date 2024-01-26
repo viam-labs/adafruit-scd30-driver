@@ -24,6 +24,7 @@ pub fn register_models(registry: &mut ComponentRegistry) -> anyhow::Result<(), R
 
 const RESET_COMMAND: u8 = 0xD304;
 const READ_COMMAND: u8 = 0x0300;
+const DATA_READY_COMMAND: u8 = 0x0202;
 const SCD30_DEFAULT_ADDRESS: u8 = 0x61;
 
 fn _get_command_bytes(command: u8) -> [u8; 2] {
@@ -100,19 +101,31 @@ impl AdafruitSCD30 {
     //     };
     //     Ok(())
     // }
+    fn is_data_available(&mut self) -> anyhow::Result<bool> {
+        let mut result: [u8; 2] = [0; 2];
+        let command_bytes = _get_command_bytes(DATA_READY_COMMAND);
+        self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
+        Ok(result[0] == 1)
+    }
 
     fn get_readings(&mut self) -> anyhow::Result<TypedReadingsResult<f64>> {
         let mut x = HashMap::new();
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
+        // self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
+        self.i2c_handle.write_i2c(self.i2c_address, &command_bytes)?;
+        let mut number_attempts = 10;
+        while !self.is_data_available()? {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            number_attempts -= 1;
+            if number_attempts == 0 {
+                return Err(anyhow::anyhow!("AdafruitSCD30 data not available"));
+            }
+        }
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
-    
+
         let co2_reading = get_reading_from_bytes(&result, 0)? as f64;
-
-    
         let temp_reading = get_reading_from_bytes(&result, 6)? as f64;
-
-    
         let humidity_reading = get_reading_from_bytes(&result, 12)? as f64;
 
         x.insert("co2".to_string(), co2_reading);
