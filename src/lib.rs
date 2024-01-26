@@ -119,10 +119,12 @@ impl AdafruitSCD30 {
             std::thread::sleep(std::time::Duration::from_millis(100));
             number_attempts -= 1;
             if number_attempts == 0 {
+                println!("AdafruitSCD30 data not available");
                 return Err(anyhow::anyhow!("AdafruitSCD30 data not available"));
             }
         }
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
+        println!("result: {:?}", result);
 
         let co2_reading = get_reading_from_bytes(&result, 0)? as f64;
         let temp_reading = get_reading_from_bytes(&result, 6)? as f64;
