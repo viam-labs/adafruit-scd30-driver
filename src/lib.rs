@@ -125,8 +125,8 @@ impl SensorT<f64> for AdafruitSCD30 {
         let mut x = HashMap::new();
         let command_bytes = _get_command_bytes(READ_COMMAND);
         let mut result: [u8; 18] = [0; 18];
-        let i2c_handle = self.i2c_handle.borrow_mut();
-        i2c_handle.borrow_mut().write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
+        let mut i2c_handle = self.i2c_handle.borrow_mut();
+        i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
     
         let co2_reading = get_reading_from_bytes(&result, 0)? as f64;
 
