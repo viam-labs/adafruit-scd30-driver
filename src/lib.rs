@@ -35,7 +35,7 @@ const SCD30_DEFAULT_ADDRESS: u8 = 0x61;
 fn _get_command_bytes(command: u8) -> [u8; 3] {
     // Shift the command 8 bits to the right and store the result in the first element of the command array
     // Perform a bitwise AND operation on the command and 0xFF (255 in decimal) and store the result in the second element of the command array
-    let command: Vec<u8> = [command >> 8, command & 0xFF, 0];
+    let command: [u8; 3] = [command >> 8, command & 0xFF, 0];
     insert_crc8(command, 0x31)
 }
 
