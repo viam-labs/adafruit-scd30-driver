@@ -15,6 +15,7 @@ use micro_rdk::common::{
     },
     status::Status,
 };
+use crc8_rs::insert_crc8;
 
 pub fn register_models(registry: &mut ComponentRegistry) -> anyhow::Result<(), RegistryError> {
     registry.register_sensor("adafruit-scd30", &AdafruitSCD30::from_config)?;
@@ -29,8 +30,13 @@ const READ_COMMAND: u8 = 0xC3;
 const DATA_READY_COMMAND: u8 = 0x0202;
 const SCD30_DEFAULT_ADDRESS: u8 = 0x61;
 
-fn _get_command_bytes(command: u8) -> [u8; 2] {
-    [command >> 8, command & 0xFF]
+// Define a function named _get_command_bytes that takes a u8 command 
+// as input and returns an array of two u8 elements and a CRC8 checksum
+fn _get_command_bytes(command: u8) -> [u8; 3] {
+    // Shift the command 8 bits to the right and store the result in the first element of the command array
+    // Perform a bitwise AND operation on the command and 0xFF (255 in decimal) and store the result in the second element of the command array
+    let command: Vec<u8> = [command >> 8, command & 0xFF, 0];
+    insert_crc8(command, 0x31)
 }
 
 
@@ -126,7 +132,6 @@ impl AdafruitSCD30 {
                 }
             } else {
                 println!("data available i2c read fail");
-                
             }
             std::thread::sleep(std::time::Duration::from_millis(100));
             number_attempts -= 1;

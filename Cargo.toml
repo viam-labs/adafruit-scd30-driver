@@ -8,6 +8,7 @@ resolver = "2"
 [dependencies]
 anyhow = {version = "1", features = ["backtrace"]}
 micro-rdk = {git = "https://github.com/viamrobotics/micro-rdk.git", features = ["esp32"]}
+crc8-rs = "1.1"
 
 [package.metadata.com.viam]
 module = true
