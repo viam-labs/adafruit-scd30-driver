@@ -23,7 +23,9 @@ pub fn register_models(registry: &mut ComponentRegistry) -> anyhow::Result<(), R
 }
 
 const RESET_COMMAND: u8 = 0xD304;
-const READ_COMMAND: u8 = 0x0300;
+//const READ_COMMAND: u8 = 0x0300;
+
+const READ_COMMAND: u8 = 0xC3;
 const DATA_READY_COMMAND: u8 = 0x0202;
 const SCD30_DEFAULT_ADDRESS: u8 = 0x61;
 
@@ -106,6 +108,7 @@ impl AdafruitSCD30 {
         let command_bytes = _get_command_bytes(DATA_READY_COMMAND);
 
         self.i2c_handle.write_read_i2c(self.i2c_address, &command_bytes, &mut result)?;
+        println!("data available result: {:?}", result);
         Ok(result[1] == 1)
     }
 
@@ -121,6 +124,9 @@ impl AdafruitSCD30 {
                 if is_data_available {
                     break;
                 }
+            } else {
+                println!("data available i2c read fail");
+                
             }
             std::thread::sleep(std::time::Duration::from_millis(100));
             number_attempts -= 1;
